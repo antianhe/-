@@ -1,0 +1,114 @@
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider, Button, RadioButtons
+import SimpleITK as sitk
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
+from matplotlib.backend_bases import MouseButton
+class confidence():
+    def __init__(self,scan, *args, **kwargs):
+        
+        self.scan=scan
+        self.PT=[]
+        self.a=1
+        self.b=1
+        self.c=1
+        self.d=1
+        return super().__init__(*args, **kwargs)
+   
+
+    def ui(self):
+        self.fig, self.ax2 = plt.subplots()#
+        plt.subplots_adjust(bottom=0.3)#subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=None),调节子图需要
+        axcolor = 'lightgoldenrodyellow'
+        axfreq = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)#[left, bottom, width, height]
+        #[起点x,起点y，宽，高]
+        axfreq2 = plt.axes([0.2, 0.2, 0.04, 0.6], facecolor=axcolor)#设置x轴的范围为[0.25, 0.1]，y轴的范围为[0.65, 0.03]axes:轴外面的部件
+        axfreq3 = plt.axes([0.8, 0.2, 0.04, 0.6], facecolor=axcolor)
+        axfreq4 = plt.axes([0.9, 0.2, 0.04, 0.6], facecolor=axcolor)
+        self.sfreq = Slider(axfreq, 'Freq', 0.0, 100.0,valfmt='% .2f', valinit=0, valstep=1)#
+        self.sfreq.on_changed(self.update)#参数回调函数
+        self.sfreq.set_val(1)
+
+        self.diedai = Slider(axfreq2, 'diedai', 0.0, 10.0,valfmt='% .2f', valinit=0, valstep=1,orientation='vertical')#
+        self.diedai.on_changed(self.diedai1)
+        self.chengzi = Slider(axfreq3, 'chengzi', 0.0, 10.0,valfmt='% .2f', valinit=0, valstep=1,orientation='vertical')#
+        self.chengzi.on_changed(self.chengzi1)
+        self.banjin = Slider(axfreq4, 'banjin', 0.0, 10.0,valfmt='% .2f', valinit=0, valstep=1,orientation='vertical')#
+        self.banjin.on_changed(self.banjin1)
+
+        itkimage2=self.scan[:,5,:,]
+        self.ax2.imshow(itkimage2) 
+        plt.connect('button_press_event', self.dianhudong)
+
+        plt.show()
+    def dianhudong(self,event):
+        
+        if event.button is MouseButton.RIGHT:
+            if self.PT==[]:
+                    self.PT.append([int(event.xdata),int(event.ydata)])
+            else:
+               self.PT.clear()
+               self.PT.append([int(event.xdata),int(event.ydata)])
+            print("add position:" ,event.button,event.xdata, event.ydata)
+            print(self.PT)
+            self.jieguo=self.quyuzengzhang(self.itkimage2,self.PT,self.a,self.b,self.c)
+            self.jieguo=self.jieguo#+self.scan
+            self.fig.canvas.draw_idle()#重新绘制整个图表canvas画布
+            self.ax2.imshow(self.jieguo)
+            
+    def update(self,val):
+        freq = int(self.sfreq.val)#滑动块的值
+        self.itkimage2=self.scan[:,freq,:,]
+        self.fig.canvas.draw_idle()#重新绘制整个图表canvas画布  
+        self.ax2.imshow(self.itkimage2)   
+        print("当前切片书为",freq)
+
+    def diedai1(self,val):
+        self.a=int(self.diedai.val)
+        self.jieguo=self.quyuzengzhang(self.itkimage2,self.PT,self.a,self.b,self.c)
+        self.jieguo=self.itkimage2+self.jieguo
+        self.fig.canvas.draw_idle()#重新绘制整个图表canvas画布  
+        self.ax2.imshow(self.jieguo) 
+       # return self.a
+    def chengzi1(self,val):
+        self.b=int(self.diedai.val)
+          
+        self.jieguo=self.quyuzengzhang(self.itkimage2,self.PT,self.a,self.b,self.c)
+        self.jieguo=self.itkimage2+self.jieguo
+        self.fig.canvas.draw_idle()#重新绘制整个图表canvas画布
+        self.ax2.imshow(self.jieguo)   
+    def banjin1(self,val):
+        self.c=int(self.diedai.val)
+          
+        self.jieguo=self.quyuzengzhang(self.itkimage2,self.PT,self.a,self.b,self.c)
+        self.jieguo=self.jieguo
+        self.fig.canvas.draw_idle()#重新绘制整个图表canvas画
+        self.ax2.imshow(self.jieguo)      
+   
+       
+    def quyuzengzhang(self,scan,seed,j,h,l):
+       # itkimage2=scan[i,:,:]
+        itkimagepicture=sitk.GetImageFromArray(scan)
+        seg_implicit_thresholds = sitk.ConfidenceConnected(itkimagepicture,seed, numberOfIterations=j,multiplier=h,
+                                                            initialNeighborhoodRadius=l,
+                                                            replaceValue=255)                                                                                                                                        
+        implicit=sitk.GetArrayFromImage(seg_implicit_thresholds)
+        return implicit
+   
+        
+from matplotlib.backend_bases import Event
+
+#event = threading.Event()
+
+
+
+
+
+
+rgb_img = sitk.ReadImage('brats.mha')
+scan=sitk.GetArrayFromImage(rgb_img)#
+#scan=scan[50,:,:]
+fenge=confidence(scan)
+fenge.ui()
